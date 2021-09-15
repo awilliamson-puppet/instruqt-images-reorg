@@ -19,3 +19,5 @@ Get-ChildItem "C:\ProgramData\PuppetLabs" -Recurse
 Write-Output "Getting puppet agent installed version"
 
 Get-WmiObject -Class Win32_Product | Where-Object vendor -like "*Puppet*"| Select-Object Name, Version
+
+Set-Service -Name puppet -StartUpType Automatic

@@ -13,17 +13,30 @@ source "googlecompute" "puppet-pe-base" {
   instance_name       = "puppet-pe-base-${var.lab_id}"
   machine_type        = "n2d-standard-2"
   project_id          = "kmo-instruqt"
-  source_image_family = "puppet-pe-base"
+  source_image_family = "centos-7"
   ssh_username        = "centos"
   zone                = "us-west1-b"
 }
 
-source "googlecompute" "nixagent" {
+source "googlecompute" "nixagent1" {
   image_labels = {
     created = "${local.timestamp}"
   }
-  image_name          = "nixagent-${var.lab_id}"
-  instance_name       = "nixagent-${var.lab_id}"
+  image_name          = "nixagent1-${var.lab_id}"
+  instance_name       = "nixagent1-${var.lab_id}"
+  machine_type        = "n2d-standard-2"
+  project_id          = "kmo-instruqt"
+  source_image_family = "centos-7"
+  ssh_username        = "centos"
+  zone                = "us-west1-b"
+}
+
+source "googlecompute" "nixagent2" {
+  image_labels = {
+    created = "${local.timestamp}"
+  }
+  image_name          = "nixagent2-${var.lab_id}"
+  instance_name       = "nixagent2-${var.lab_id}"
   machine_type        = "n2d-standard-2"
   project_id          = "kmo-instruqt"
   source_image_family = "centos-7"
@@ -59,12 +72,59 @@ source "googlecompute" "winagent" {
 
 build {
     sources = ["source.googlecompute.puppet-pe-base"]
+
+    provisioner "file" {
+      destination = "/tmp/resources"
+      source      = "./resources"
+  }
+
+    provisioner "shell" {
+      scripts = [
+          "./setup-steps/bootstrap.sh"
+      ]
+      skip_clean = true
+    }
 }
 
 build {
-    sources = ["source.googlecompute.nixagent"]
+    sources = ["source.googlecompute.nixagent1"]
+
+    provisioner "shell" {
+      scripts = [
+          "./setup-steps/nixagent/SetupFacts.sh",
+          "./setup-steps/nixagent/OptionBasedPackageInstaller.sh"
+          ]
+      
+      environment_vars = [
+        "OPTIONVAR=httpd"
+        ]
+      skip_clean = true
+
+    }
+}
+
+build {
+    sources = ["source.googlecompute.nixagent2"]
+
+    provisioner "shell" {
+      scripts = [
+          "./setup-steps/nixagent/SetupFacts.sh",
+          "./setup-steps/nixagent/OptionBasedPackageInstaller.sh"]
+      
+      environment_vars = ["OPTIONVAR=nginx"]
+      skip_clean = true
+
+    }
 }
 
 build {
     sources = ["source.googlecompute.winagent"]
+
+    provisioner "powershell" {
+        scripts = [
+          "./setup-steps/windows/Install-IIS.ps1",
+          "./setup-steps/windows/Install-PuppetAgent.ps1"]
+        
+        skip_clean = true
+    }
 }

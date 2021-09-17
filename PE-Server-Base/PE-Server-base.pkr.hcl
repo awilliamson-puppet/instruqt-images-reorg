@@ -2,6 +2,11 @@
 
 locals { timestamp = regex_replace(timestamp(), "[- TZ:]", "") }
 
+variable "password" {
+  type = string
+  default = "password"
+}
+
 source "googlecompute" "puppet-pe-base" {
   image_labels = {
     created = "${local.timestamp}"
@@ -25,6 +30,7 @@ build {
   }
 
   provisioner "shell" {
+    execute_command  = "echo '${var.password}' | {{ .Vars }} sudo -E -S bash '{{ .Path }}'"
     script           = "./bootstrap-scripts/bootstrap.sh"
     valid_exit_codes = [0, 2, 4, 6]
   }

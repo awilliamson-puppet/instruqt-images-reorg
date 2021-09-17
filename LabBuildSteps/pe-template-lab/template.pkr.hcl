@@ -1,15 +1,23 @@
+# A variable to store the lab id for use in various name config options where machine names are generated 
+# Can be overriden on the command line during building
+
 variable "lab_id" {
     type = string
     default = "lab-3-1"
 }
 
+# A default root password used during provisioning to execute .sh scripts as root
 variable "password" {
   type = string
   default = "password"
 }
 
+# a tag for GCP image metadata to tag the resulting image with the current build timestamp
 locals { timestamp = regex_replace(timestamp(), "[- TZ:]", "") }
 
+# A source is a reusable piece of meta data that contains basic info about the VM being built
+# these can be named anything, and control the output of log lines during build
+# the convention is to name them by provider and imagename
 source "googlecompute" "puppet-pe" {
   image_labels = {
     created = "${local.timestamp}"
@@ -49,6 +57,7 @@ source "googlecompute" "nixagent2" {
   zone                = "us-west1-b"
 }
 
+# In this source the windows image family is set to inherit from the windows-base image family to allow inheritence
 source "googlecompute" "winagent" {
   image_labels = {
     created = "${local.timestamp}"
@@ -75,19 +84,19 @@ source "googlecompute" "winagent" {
   winrm_username      = "packer_user"
 }
 
+# a build block consumes source block meta-data as defined in the sources array
+# build blocks also setup the way changes are made to the resulting VM image
+# these change engines can be scripts, uploading files, or inline commands
 build {
 
     sources = ["source.googlecompute.puppet-pe"]
 
-    provisioner "file" {
-      source = "./setup-steps/pe-server/resources"
-      destination = "/tmp/resources"
-    }
-
+    # This provisioner uploades the Base-Setup.sh script to the VM /tmp directory and runs it with sudo -E -S
+    # The script path is relative to the .pkr.hcl file used during this build
     provisioner "shell" {
       execute_command  = "echo '${var.password}' | {{ .Vars }} sudo -E -S bash '{{ .Path }}'"
       scripts = [
-          "./setup-steps/pe-server/Base-Setup.sh"
+          "./Base-Setup.sh"
       ]
       skip_clean = true
     }

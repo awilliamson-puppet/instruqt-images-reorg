@@ -1,6 +1,6 @@
 set -x
 
-sudo mkdir -p /etc/puppetlabs/facter/facts.d
+mkdir -p /etc/puppetlabs/facter/facts.d
 
 cd /etc/puppetlabs/facter/facts.d
 touch datacenter.sh
